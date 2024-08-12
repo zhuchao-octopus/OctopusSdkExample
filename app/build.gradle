@@ -1,0 +1,76 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.octopus.example'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.octopus.example"
+        minSdk 24
+        targetSdk 34
+        versionCode 10
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'rkpx5'
+            keyPassword 'android'
+            storeFile file('rkpx5.jks')
+            storePassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            //在debug模式下引用该签名文件
+            signingConfig signingConfigs.release
+        }
+        release {
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    viewBinding {
+        enabled = true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+    implementation(libs.libbaseutils)//框架基础类
+    implementation(libs.libcamerautils)//相机控制
+    ///implementation('com.zhuchao.android:libDecodeCore:1.6@aar')//播放器的核心解码库
+    implementation(libs.libdnetutils)//网络接口
+    implementation(libs.libfosutils)//平台接口
+    implementation(libs.libfpersistutils)//数据存储
+    implementation(libs.libgxmediautils)//媒体管理类
+    implementation(libs.libgxplayerutils)//播放器
+    ///implementation(libs.libopencomputervision)//机器视觉
+    ///implementation(libs.libopendetection)//人脸检测识别
+    ///implementation(libs.libopenlargemodeldeeplearning)//大模型与深度学习
+    implementation(libs.libsessionutils)//会话管理、杂项
+}

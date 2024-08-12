@@ -1,0 +1,39 @@
+[versions]
+agp = "8.5.0"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+appcompat = "1.6.1"
+libbaseutils = "2.2"
+libcamerautils = "1.0"
+libdnetutils = "2.1"
+libfosutils = "1.4"
+libfpersistutils = "1.2"
+libgxmediautils = "2.0"
+libgxplayerutils = "3.0"
+libsessionutils = "2.9"
+material = "1.10.0"
+activity = "1.8.0"
+constraintlayout = "2.1.4"
+
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+libbaseutils = { module = "com.zhuchao.android:libBaseUtils", version.ref = "libbaseutils" }
+libfosutils = { module = "com.zhuchao.android:libFOSUtils", version.ref = "libfosutils" }
+libdnetutils = { module = "com.zhuchao.android:libDNetUtils", version.ref = "libdnetutils" }
+libcamerautils = { module = "com.zhuchao.android:libCameraUtils", version.ref = "libcamerautils" }
+libsessionutils = { module = "com.zhuchao.android:libSessionUtils", version.ref = "libsessionutils" }
+
+libgxplayerutils = { module = "com.zhuchao.android:libGXPlayerUtils", version.ref = "libgxplayerutils" }
+libgxmediautils = { module = "com.zhuchao.android:libGXMediaUtils", version.ref = "libgxmediautils" }
+libfpersistutils = { module = "com.zhuchao.android:libFPersistUtils", version.ref = "libfpersistutils" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+
