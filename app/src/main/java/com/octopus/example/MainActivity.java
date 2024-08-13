@@ -12,12 +12,13 @@ import androidx.core.view.WindowInsetsCompat;
 import com.octopus.example.databinding.ActivityMainBinding;
 import com.zhuchao.android.fbase.EventCourier;
 import com.zhuchao.android.fbase.FileUtils;
+import com.zhuchao.android.fbase.MMLog;
 import com.zhuchao.android.fbase.MethodThreadMode;
 import com.zhuchao.android.fbase.TCourierSubscribe;
 import com.zhuchao.android.session.base.BaseActivity;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
-
+    private final String TAG ="MainActivity";
     private ActivityMainBinding binding;
 
     @Override
@@ -39,35 +40,41 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         binding.button1.setOnClickListener(this);
         binding.button2.setOnClickListener(this);
         binding.button3.setOnClickListener(this);
+        binding.button9.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
         int id = v.getId();
-        if (id == R.id.button1)
+        if (id == R.id.button1) {
+            String apkUrl = "http://www.1234998.top/downloads/S2p.apk"; //需要从网络下载的APK URL地址
+            OctopusUtils.startDownloadApkFrom(apkUrl, FileUtils.getDownloadDir(null));
+        } else if (id == R.id.button2)///用户点击事件安装指定APK
         {
-         String apkUrl=""; //需要从网络下载的APK URL地址
-         OctopusUtils.startDownloadApkFrom(this,apkUrl, FileUtils.getDownloadDir(null));
+            String apkFileName = "/storage/emulated/0/Download/S2p.apk";//要静默安装的APK 完成路径名称
+            OctopusUtils.startSilentInstallApk(this, apkFileName);
+        } else if (id == R.id.button3) {
+            String appPackageName = "";//要卸载的APP包名
+            OctopusUtils.startSilentUninstallApk(this, appPackageName);
         }
-        else if (id == R.id.button2)///用户点击事件安装指定APK
-        {
-            String apkFileName="";//要静默安装的APK 完成路径名称
-            OctopusUtils.startSilentInstallApk(this,apkFileName);
-        }
-        else if (id == R.id.button3) {
-            String appPackageName="";//要卸载的APP包名
-            OctopusUtils.startSilentUninstallApk(this,appPackageName);
+        else if (id == R.id.button9) {
+           //FileUtils.getDownloadDir("aaa");
+            if(FileUtils.existFile("/storage/emulated/0/Download//S2p.apk"))
+                Toast.makeText(this, "file exists", Toast.LENGTH_SHORT).show();
+            else
+                Toast.makeText(this, "file not exists", Toast.LENGTH_SHORT).show();
         }
     }
 
 
     @TCourierSubscribe(threadMode = MethodThreadMode.threadMode.MAIN)
     public boolean onTCourierSubscribeEvent(EventCourier msg) {
-        switch (msg.getId())
-        {
+        MMLog.d(TAG,msg.toStr());
+        switch (msg.getId()) {
             case OctopusUtils.DOWNLOAD_MESSAGE_SUCCESSFUL:///从网络下载完成后自动静默安装
-                Toast.makeText(this, "下载成功，开始静默安装", Toast.LENGTH_SHORT).show();
-                OctopusUtils.startSilentInstallApk(this,msg.getObj().toString());
+                //Toast.makeText(this, "下载成功，开始静默安装", Toast.LENGTH_SHORT).show();
+                MMLog.d(TAG,"下载完成，开始静默安装 "+msg.getObj().toString());
+                OctopusUtils.startSilentInstallApk(this, msg.getObj().toString());
         }
         return true;
     }

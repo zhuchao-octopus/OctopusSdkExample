@@ -30,13 +30,13 @@ public class OctopusUtils {
         intent.putExtra("apkFilePathName", apkFilePathName);
         intent.putExtra("installedReboot", false);//安装成功后是否重启设备，true为启动、false为不启动，默认为false;
         intent.putExtra("installedAutoStart", false); //安装成功后是否立刻启动，true为启动、false为不启动，默认为false;
-        intent.putExtra("installedDeleteFile", true);////安装成功后是否删除apk,true表示删除 默认为false;
+        intent.putExtra("installedDeleteFile", false);////安装成功后是否删除apk,true表示删除 默认为false;
 
         if (context != null) {
             MMLog.log(TAG, "启动静默升级 ————>" + apkFilePathName);
             context.sendBroadcast(intent);
         } else {
-            MMLog.log(TAG, "getApplicationContext() == null" + apkFilePathName);
+            MMLog.log(TAG, "context=null" + apkFilePathName);
         }
     }
 
@@ -49,7 +49,7 @@ public class OctopusUtils {
         }
     }
 
-    public static void startDownloadApkFrom(Context context,String url,String toPath) {
+    public static void startDownloadApkFrom(String url,String toPath) {
         TTaskManager.dl(url,toPath).callbackHandler(new TaskCallback() {
             @Override
             public void onEventTaskFinished(Object obj, int status) {
@@ -58,11 +58,12 @@ public class OctopusUtils {
                 switch (status) {
                     case DataID.TASK_STATUS_SUCCESS:
                         MMLog.log(TAG, "Download successful localPathFileName = " + downloadPath);
-                        Cabinet.getEventBus().postMain(new EventCourier("MainActivity",DOWNLOAD_MESSAGE_SUCCESSFUL, null));
+                        ///下载完成后，通过事件总线将消息发送到 MainActivity 异步处理
+                        Cabinet.getEventBus().post(new EventCourier("MainActivity",DOWNLOAD_MESSAGE_SUCCESSFUL, downloadPath));
                         break;
                     case DataID.TASK_STATUS_PROGRESSING:
                         //Cabinet.getEventBus().postMain(new EventCourier("DownloadFragment", DataID.TASK_STATUS_PROGRESSING, tTask));
-                        MMLog.d(TAG,"downloadPath="+downloadPath+":"+tTask.getProperties().getString("progress"));
+                        MMLog.d(TAG,"downloadPath="+downloadPath+":"+tTask.getProperties().getLong("progress")+"/"+tTask.getProperties().getLong("total"));
                         break;
                 }
             }
