@@ -1,25 +1,43 @@
 package com.octopus.example;
 
+import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_READ;
+import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_UART_READ;
+
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.octopus.example.databinding.ActivityMainBinding;
+import com.zhuchao.android.TPlatform;
+import com.zhuchao.android.fbase.ByteUtils;
+import com.zhuchao.android.fbase.DataID;
 import com.zhuchao.android.fbase.EventCourier;
 import com.zhuchao.android.fbase.FileUtils;
 import com.zhuchao.android.fbase.MMLog;
 import com.zhuchao.android.fbase.MethodThreadMode;
 import com.zhuchao.android.fbase.TCourierSubscribe;
-import com.zhuchao.android.session.base.BaseActivity;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener {
-    private final String TAG ="MainActivity";
+import com.zhuchao.android.fbase.ThreadUtils;
+import com.zhuchao.android.fbase.eventinterface.EventCourierInterface;
+import com.zhuchao.android.fbase.eventinterface.TCourierEventListener;
+import com.zhuchao.android.net.NetworkInformation;
+import com.zhuchao.android.net.TNetUtils;
+import com.zhuchao.android.serialport.TUartFile;
+import com.zhuchao.android.session.Cabinet;
+import com.zhuchao.android.session.base.BaseActivity;
+import com.zhuchao.android.utils.TelephonyUtils;
+
+public class MainActivity extends BaseActivity implements View.OnClickListener, TCourierEventListener {
+    private final String TAG = "MainActivity";
     private ActivityMainBinding binding;
+    private TUartFile tUartDevice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,14 +55,26 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             return insets;
         });
 
+        Cabinet.getDeviceManager().printAllDevice();
+        Cabinet.getNet(this).registerNetStatusCallback(this);
+
         binding.button1.setOnClickListener(this);
         binding.button2.setOnClickListener(this);
         binding.button3.setOnClickListener(this);
+        binding.button4.setOnClickListener(this);
+        binding.button5.setOnClickListener(this);
+        binding.button6.setOnClickListener(this);
+        binding.button7.setOnClickListener(this);
+        binding.button8.setOnClickListener(this);
         binding.button9.setOnClickListener(this);
+        binding.button10.setOnClickListener(this);
+        binding.button11.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
+        byte[] data = new byte[6];
+
         int id = v.getId();
         if (id == R.id.button1) {
             String apkUrl = "http://www.1234998.top/downloads/S2p.apk"; //需要从网络下载的APK URL地址
@@ -56,26 +86,91 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         } else if (id == R.id.button3) {
             String appPackageName = "";//要卸载的APP包名
             OctopusUtils.startSilentUninstallApk(this, appPackageName);
-        }
-        else if (id == R.id.button9) {
-           //FileUtils.getDownloadDir("aaa");
-            if(FileUtils.existFile("/storage/emulated/0/Download//S2p.apk"))
-                Toast.makeText(this, "file exists", Toast.LENGTH_SHORT).show();
-            else
-                Toast.makeText(this, "file not exists", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.button4) {
+            this.hideStatusBar();
+            recreate();
+        } else if (id == R.id.button5) {
+            this.showStatusBar();
+            ThreadUtils.runThread(new Runnable() {
+                @Override
+                public void run() {
+                    recreate();
+                }
+            },500);
+
+        } else if (id == R.id.button6) {
+            this.openLocalActivity(FullscreenActivity.class);
+        } else if (id == R.id.button7) {
+            tUartDevice = Cabinet.getUartDevice("/dev/ttyS3", 115200);
+            if (tUartDevice != null) {
+                tUartDevice.setFrameMiniSize(6);
+                tUartDevice.addFrameStartCode(0xA100);
+                //注册设备事件总线,异步处理设备写入操作
+                Cabinet.getEventBus().registerEventObserver(tUartDevice.getDeviceTag(), tUartDevice);
+                //启动设备开始读取数据
+                tUartDevice.startPollingRead();
+                //注册串口接收数据回调方法
+                tUartDevice.registerOnReceivedCallback(this);
+            }
+        } else if (id == R.id.button8) {
+            if (tUartDevice != null) tUartDevice.writeBytesWait(data);
+        } else if (id == R.id.button9) {
+            if (tUartDevice != null) {
+                Cabinet.getEventBus().post(new EventCourier(tUartDevice.getDeviceTag(), DataID.DEVICE_EVENT_UART_WRITE, data));
+            }
+        } else if (id == R.id.button10) {
+            Cabinet.getTTS(this).speak("hello! are you ok!");
+        } else if (id == R.id.button11) {
+            FileUtils.getFileSystemPartitions(null).printAll();
+            Cabinet.getNet(this).printNetworkInformation();
+            MMLog.d(TAG,"IMEI  :"+TelephonyUtils.getIMEI(this));
+            MMLog.d(TAG,"ICCID :"+TelephonyUtils.getICCID(this));
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (tUartDevice != null) {
+            tUartDevice.closeDevice();
+        }
+    }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        MMLog.d(TAG,"onConfigurationChanged "+ newConfig.toString());
+    }
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////
+    //自定义事件监听
     @TCourierSubscribe(threadMode = MethodThreadMode.threadMode.MAIN)
     public boolean onTCourierSubscribeEvent(EventCourier msg) {
-        MMLog.d(TAG,msg.toStr());
+        MMLog.d(TAG, msg.toStr());
         switch (msg.getId()) {
             case OctopusUtils.DOWNLOAD_MESSAGE_SUCCESSFUL:///从网络下载完成后自动静默安装
                 //Toast.makeText(this, "下载成功，开始静默安装", Toast.LENGTH_SHORT).show();
-                MMLog.d(TAG,"下载完成，开始静默安装 "+msg.getObj().toString());
+                MMLog.d(TAG, "下载完成，开始静默安装 " + msg.getObj().toString());
                 OctopusUtils.startSilentInstallApk(this, msg.getObj().toString());
         }
         return true;
+    }
+    //设备总线事件监听
+    @Override
+    public boolean onCourierEvent(EventCourierInterface eventCourier) {
+        switch (eventCourier.getId()) {
+            case DEVICE_EVENT_READ:
+            case DEVICE_EVENT_UART_READ:
+                //打印接收到的串口数据
+                MMLog.d(TAG, ByteUtils.BuffToHexStr(eventCourier.getDatas()));
+                break;
+        }
+        return true;
+    }
+    //网络状态事件监听
+    @Override
+    public void onNetStatusChanged(NetworkInformation networkInformation) {
+        super.onNetStatusChanged(networkInformation);
+        MMLog.d(TAG,networkInformation.toJson());//打印网络设备信息
     }
 }
