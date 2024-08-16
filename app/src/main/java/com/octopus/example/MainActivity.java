@@ -77,11 +77,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
         int id = v.getId();
         if (id == R.id.button1) {
-            String apkUrl = "http://www.1234998.top/downloads/S2p.apk"; //需要从网络下载的APK URL地址
+            String apkUrl = "http://www.1234998.top/downloads/app-gps-demo.apk"; //需要从网络下载的APK URL地址
             OctopusUtils.startDownloadApkFrom(apkUrl, FileUtils.getDownloadDir(null));
         } else if (id == R.id.button2)///用户点击事件安装指定APK
         {
-            String apkFileName = "/storage/emulated/0/Download/S2p.apk";//要静默安装的APK 完成路径名称
+            String apkFileName = "/storage/emulated/0/Download/app-gps-demo.apk";//要静默安装的APK 完成路径名称
             OctopusUtils.startSilentInstallApk(this, apkFileName);
         } else if (id == R.id.button3) {
             String appPackageName = "";//要卸载的APP包名
@@ -155,7 +155,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         }
         return true;
     }
-    //设备总线事件监听
+    //串口设备总线事件监听，接收数据
     @Override
     public boolean onCourierEvent(EventCourierInterface eventCourier) {
         switch (eventCourier.getId()) {
