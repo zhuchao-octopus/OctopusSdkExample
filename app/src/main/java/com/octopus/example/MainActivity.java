@@ -73,8 +73,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
 
     @Override
     public void onClick(View v) {
-        byte[] data = new byte[6];
-
+        byte[] data = new byte[6]; data[1] = 0x10;
         int id = v.getId();
         if (id == R.id.button1) {
             String apkUrl = "http://www.1234998.top/downloads/app-gps-demo.apk"; //需要从网络下载的APK URL地址
@@ -101,10 +100,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         } else if (id == R.id.button6) {
             this.openLocalActivity(FullscreenActivity.class);
         } else if (id == R.id.button7) {
-            tUartDevice = Cabinet.getUartDevice("/dev/ttyS3", 115200);
+            tUartDevice = Cabinet.getUartDevice("/dev/ttyS0", 115200);
             if (tUartDevice != null) {
-                tUartDevice.setFrameMiniSize(6);
-                tUartDevice.addFrameStartCode(0xA100);
+                tUartDevice.clearFrameStartCode();
+                tUartDevice.clearFrameEndCode();
+                tUartDevice.setFrameMiniSize(1);
+                //tUartDevice.setDebug(true);
+                //tUartDevice.addFrameStartCode(0xA100);
                 //注册设备事件总线,异步处理设备写入操作
                 Cabinet.getEventBus().registerEventObserver(tUartDevice.getDeviceTag(), tUartDevice);
                 //启动设备开始读取数据
@@ -158,6 +160,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
     //串口设备总线事件监听，接收数据
     @Override
     public boolean onCourierEvent(EventCourierInterface eventCourier) {
+        MMLog.d(TAG, eventCourier.toStr());
         switch (eventCourier.getId()) {
             case DEVICE_EVENT_READ:
             case DEVICE_EVENT_UART_READ:
