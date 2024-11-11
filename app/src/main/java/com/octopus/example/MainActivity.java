@@ -3,6 +3,7 @@ package com.octopus.example;
 import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_READ;
 import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_UART_READ;
 
+import android.annotation.SuppressLint;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
@@ -14,6 +15,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.common.utils.MachineConfig;
+import com.common.utils.UtilSystem;
 import com.octopus.example.databinding.ActivityMainBinding;
 import com.zhuchao.android.TPlatform;
 import com.zhuchao.android.fbase.ByteUtils;
@@ -22,6 +25,7 @@ import com.zhuchao.android.fbase.EventCourier;
 import com.zhuchao.android.fbase.FileUtils;
 import com.zhuchao.android.fbase.MMLog;
 import com.zhuchao.android.fbase.MethodThreadMode;
+import com.zhuchao.android.fbase.TAppProcessUtils;
 import com.zhuchao.android.fbase.TCourierSubscribe;
 
 import com.zhuchao.android.fbase.ThreadUtils;
@@ -29,15 +33,18 @@ import com.zhuchao.android.fbase.eventinterface.EventCourierInterface;
 import com.zhuchao.android.fbase.eventinterface.TCourierEventListener;
 import com.zhuchao.android.net.NetworkInformation;
 import com.zhuchao.android.net.TNetUtils;
+import com.zhuchao.android.player.AudioPlayer;
 import com.zhuchao.android.serialport.TUartFile;
 import com.zhuchao.android.session.Cabinet;
 import com.zhuchao.android.session.base.BaseActivity;
 import com.zhuchao.android.utils.TelephonyUtils;
+import com.zhuchao.android.video.OMedia;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener, TCourierEventListener {
     private final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private TUartFile tUartDevice;
+    private final AudioPlayer mAudioPlayer = new AudioPlayer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +76,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
         binding.button9.setOnClickListener(this);
         binding.button10.setOnClickListener(this);
         binding.button11.setOnClickListener(this);
+        binding.button12.setOnClickListener(this);
+        binding.button13.setOnClickListener(this);
     }
 
+    @SuppressLint("SdCardPath")
     @Override
     public void onClick(View v) {
         byte[] data = new byte[6]; data[1] = 0x10;
@@ -127,6 +137,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             Cabinet.getNet(this).printNetworkInformation();
             MMLog.d(TAG,"IMEI  :"+TelephonyUtils.getIMEI(this));
             MMLog.d(TAG,"ICCID :"+TelephonyUtils.getICCID(this));
+        }
+        else if (id == R.id.button12) {
+           if(mAudioPlayer !=null) {
+               byte[] pcmData = mAudioPlayer.loadPCMFile("/sdcard/carplay_jalt_play.pcm");
+               if (pcmData != null) mAudioPlayer.play(pcmData);
+           }
+        }
+        else if (id == R.id.button13) {
+            //OMedia oMedia = new OMedia("/sdcard/carplay_jalt_play.pcm");
+            //oMedia.with(this).setMagicNumber(0).play();
+            //String systemuIType = MachineConfig.getPropertyReadOnly("timezone");
+            //MMLog.d( "TAG",  "androidupdate: systemuIType="+ systemuIType);
+            //TAppProcessUtils.killApplication(this,"com.carletter.car");
+            //TAppProcessUtils.killApplication(this,"com.carletter.car");
+            startRemoteActivity("com.octopus.android.carapps","com.octopus.android.carapps.radio.RadioActivity");
         }
     }
 
