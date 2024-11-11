@@ -17,7 +17,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.common.utils.MachineConfig;
 import com.common.utils.UtilSystem;
-import com.octopus.example.databinding.ActivityMainBinding;
+
 import com.zhuchao.android.TPlatform;
 import com.zhuchao.android.fbase.ByteUtils;
 import com.zhuchao.android.fbase.DataID;
@@ -40,7 +40,9 @@ import com.zhuchao.android.session.base.BaseActivity;
 import com.zhuchao.android.utils.TelephonyUtils;
 import com.zhuchao.android.video.OMedia;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener, TCourierEventListener {
+import com.octopus.example.databinding.ActivityMainBinding;
+
+public class MainActivity extends BaseActivity implements View.OnClickListener {
     private final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private TUartFile tUartDevice;
@@ -108,7 +110,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener, 
             },500);
 
         } else if (id == R.id.button6) {
-            this.openLocalActivity(FullscreenActivity.class);
+            this.startLocalActivity(FullscreenActivity.class);
         } else if (id == R.id.button7) {
             tUartDevice = Cabinet.getUartDevice("/dev/ttyS0", 115200);
             if (tUartDevice != null) {
