@@ -4,49 +4,57 @@ import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_READ;
 import static com.zhuchao.android.fbase.DataID.DEVICE_EVENT_UART_READ;
 
 import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.common.utils.MachineConfig;
-import com.common.utils.UtilSystem;
-
-import com.zhuchao.android.TPlatform;
+import com.octopus.example.databinding.ActivityMainBinding;
 import com.zhuchao.android.fbase.ByteUtils;
 import com.zhuchao.android.fbase.DataID;
 import com.zhuchao.android.fbase.EventCourier;
 import com.zhuchao.android.fbase.FileUtils;
 import com.zhuchao.android.fbase.MMLog;
 import com.zhuchao.android.fbase.MethodThreadMode;
-import com.zhuchao.android.fbase.TAppProcessUtils;
 import com.zhuchao.android.fbase.TCourierSubscribe;
-
 import com.zhuchao.android.fbase.ThreadUtils;
 import com.zhuchao.android.fbase.eventinterface.EventCourierInterface;
-import com.zhuchao.android.fbase.eventinterface.TCourierEventListener;
 import com.zhuchao.android.net.NetworkInformation;
-import com.zhuchao.android.net.TNetUtils;
 import com.zhuchao.android.player.AudioPlayer;
 import com.zhuchao.android.serialport.TUartFile;
 import com.zhuchao.android.session.Cabinet;
 import com.zhuchao.android.session.base.BaseActivity;
 import com.zhuchao.android.utils.TelephonyUtils;
-import com.zhuchao.android.video.OMedia;
 
-import com.octopus.example.databinding.ActivityMainBinding;
+import java.util.Objects;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
     private final String TAG = "MainActivity";
+    private final AudioPlayer mAudioPlayer = new AudioPlayer();
     private ActivityMainBinding binding;
     private TUartFile tUartDevice;
-    private final AudioPlayer mAudioPlayer = new AudioPlayer();
+
+    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (("android.intent.action.USER_DATA").equals(intent.getAction())) {
+                int cmd = (int) intent.getIntExtra("cmd", 0);
+                byte[] data = Objects.requireNonNull(intent.getExtras()).getByteArray("data");
+                if (data != null)
+                    MMLog.d(TAG, "USER_DATA cmd:" + cmd + ",data:" + ByteUtils.BuffToHexStr(data));
+                else
+                    MMLog.d(TAG, "USER_DATA cmd:" + cmd + ",data:" + null);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,12 +88,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         binding.button11.setOnClickListener(this);
         binding.button12.setOnClickListener(this);
         binding.button13.setOnClickListener(this);
+
+        registerMyReceiver();
     }
 
     @SuppressLint("SdCardPath")
     @Override
     public void onClick(View v) {
-        byte[] data = new byte[6]; data[1] = 0x10;
+        byte[] data = new byte[6];
+        data[1] = 0x10;
         int id = v.getId();
         if (id == R.id.button1) {
             String apkUrl = "http://www.1234998.top/downloads/app-gps-demo.apk"; //需要从网络下载的APK URL地址
@@ -107,7 +118,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 public void run() {
                     recreate();
                 }
-            },500);
+            }, 500);
 
         } else if (id == R.id.button6) {
             this.startLocalActivity(FullscreenActivity.class);
@@ -137,23 +148,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         } else if (id == R.id.button11) {
             FileUtils.getFileSystemPartitions(null).printAll();
             Cabinet.getNet(this).printNetworkInformation();
-            MMLog.d(TAG,"IMEI  :"+TelephonyUtils.getIMEI(this));
-            MMLog.d(TAG,"ICCID :"+TelephonyUtils.getICCID(this));
-        }
-        else if (id == R.id.button12) {
-           if(mAudioPlayer !=null) {
-               byte[] pcmData = mAudioPlayer.loadPCMFile("/sdcard/carplay_jalt_play.pcm");
-               if (pcmData != null) mAudioPlayer.play(pcmData);
-           }
-        }
-        else if (id == R.id.button13) {
+            MMLog.d(TAG, "IMEI  :" + TelephonyUtils.getIMEI(this));
+            MMLog.d(TAG, "ICCID :" + TelephonyUtils.getICCID(this));
+        } else if (id == R.id.button12) {
+            if (mAudioPlayer != null) {
+                byte[] pcmData = mAudioPlayer.loadPCMFile("/sdcard/carplay_jalt_play.pcm");
+                if (pcmData != null) mAudioPlayer.play(pcmData);
+            }
+        } else if (id == R.id.button13) {
             //OMedia oMedia = new OMedia("/sdcard/carplay_jalt_play.pcm");
             //oMedia.with(this).setMagicNumber(0).play();
             //String systemuIType = MachineConfig.getPropertyReadOnly("timezone");
             //MMLog.d( "TAG",  "androidupdate: systemuIType="+ systemuIType);
             //TAppProcessUtils.killApplication(this,"com.carletter.car");
             //TAppProcessUtils.killApplication(this,"com.carletter.car");
-            startRemoteActivity("com.octopus.android.carapps","com.octopus.android.carapps.radio.RadioActivity");
+            startRemoteActivity("com.octopus.android.carapps", "com.octopus.android.carapps.radio.RadioActivity");
+        }
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerMyReceiver() {
+        IntentFilter filter = new IntentFilter();//创建IntentFilter对象
+        filter.addAction("android.intent.action.USER_DATA");
+        filter.addAction(Intent.ACTION_SCREEN_OFF);//IntentFilter对象中添加要接收的关屏广播
+        filter.addAction(Intent.ACTION_SCREEN_ON);//添加点亮屏幕广播
+        registerReceiver(broadcastReceiver, filter);
+    }
+
+    private void unRegisterMyReceiver() {
+        if (broadcastReceiver != null) {
+            unregisterReceiver(broadcastReceiver);//反注册广播，也就是注销广播接收者，使其不起作用
         }
     }
 
@@ -163,13 +187,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (tUartDevice != null) {
             tUartDevice.closeDevice();
         }
+        unRegisterMyReceiver();
     }
 
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        MMLog.d(TAG,"onConfigurationChanged "+ newConfig.toString());
+        MMLog.d(TAG, "onConfigurationChanged " + newConfig.toString());
     }
+
     //////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////
     //自定义事件监听
@@ -184,6 +210,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
         return true;
     }
+
     //串口设备总线事件监听，接收数据
     @Override
     public boolean onCourierEvent(EventCourierInterface eventCourier) {
@@ -197,10 +224,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
         return true;
     }
+
     //网络状态事件监听
     @Override
     public void onNetStatusChanged(NetworkInformation networkInformation) {
         super.onNetStatusChanged(networkInformation);
-        MMLog.d(TAG,networkInformation.toJson());//打印网络设备信息
+        MMLog.d(TAG, networkInformation.toJson());//打印网络设备信息
     }
 }

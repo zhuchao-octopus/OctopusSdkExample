@@ -17,6 +17,12 @@ android {
     }
 
     signingConfigs {
+        debug {
+            keyAlias 'rkpx5'
+            keyPassword 'android'
+            storeFile file('rkpx5.jks')
+            storePassword 'android'
+        }
         release {
             keyAlias 'rkpx5'
             keyPassword 'android'
