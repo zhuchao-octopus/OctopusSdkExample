@@ -44,7 +44,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent) { // Receive data from canbox
             if (("android.intent.action.USER_DATA").equals(intent.getAction())) {
                 int cmd = (int) intent.getIntExtra("cmd", 0);
                 byte[] data = Objects.requireNonNull(intent.getExtras()).getByteArray("data");
